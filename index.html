@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modulo Calculator Pro</title>
+    <meta name="application-name" content="Modulo Pro">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'">
     <style>
         :root {
@@ -361,6 +362,18 @@
             margin-right: 6px;
         }
 
+        .build-chip {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 8px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.45);
+        }
+
         .footer {
             text-align: center;
             padding: 12px 14px 18px;
@@ -411,7 +424,7 @@
             </button>
         </div>
 
-        <div class="version-banner" id="versionBanner"><strong>✨ Updated UI Loaded</strong>v2.2 with responsive layout, facts, and secret tools.</div>
+        <div class="version-banner" id="versionBanner"><strong>✨ Updated UI Loaded</strong><span id="versionText">v2.3</span><span class="build-chip" id="buildChip">build: --</span></div>
 
         <div class="main-content">
             <div>
@@ -502,10 +515,12 @@
             </div>
         </div>
 
-        <div class="footer">Created by Ian Mesa · Enhanced for better UX, responsiveness, and safer rendering</div>
+        <div class="footer">Created by Ian Mesa · Enhanced for better UX, responsiveness, and safer rendering · <span id="footerVersion">version --</span></div>
     </div>
 
     <script>
+        const APP_VERSION = '2.3.0';
+        const BUILD_STAMP = '2026-02-18';
         const MAX_HISTORY = 20;
         const moduloFacts = [
             'In cryptography, modular arithmetic protects data in RSA and ECC.',
@@ -523,6 +538,7 @@
         document.body.className = currentTheme;
         updateHistory();
         setRandomFact();
+        hydrateVersionUI();
         showUpdateHintOnce();
 
         const refs = {
@@ -834,16 +850,40 @@
         }
 
         function showUpdateHintOnce() {
-            const key = 'moduloProSeenV22';
-            if (!localStorage.getItem(key)) {
-                refs.error.textContent = 'New version loaded: try tapping the icon 5× for secret tools.';
+            const seenKey = 'moduloProSeenV23';
+            const lastVersion = localStorage.getItem('moduloProVersion');
+
+            if (lastVersion !== APP_VERSION) {
+                refs.error.textContent = `New web update detected: v${APP_VERSION} is live.`;
                 setTimeout(() => {
-                    if (refs.error.textContent.includes('New version loaded')) {
+                    if (refs.error.textContent.includes('New web update detected')) {
                         refs.error.textContent = '';
                     }
-                }, 2500);
-                localStorage.setItem(key, '1');
+                }, 2600);
             }
+
+            if (!localStorage.getItem(seenKey)) {
+                refs.error.textContent = 'Tip: if you do not see new UI, hard refresh (Ctrl/Cmd+Shift+R).';
+                setTimeout(() => {
+                    if (refs.error.textContent.includes('hard refresh')) {
+                        refs.error.textContent = '';
+                    }
+                }, 2800);
+                localStorage.setItem(seenKey, '1');
+            }
+
+            localStorage.setItem('moduloProVersion', APP_VERSION);
+        }
+
+        function hydrateVersionUI() {
+            const versionText = document.getElementById('versionText');
+            const buildChip = document.getElementById('buildChip');
+            const footerVersion = document.getElementById('footerVersion');
+
+            if (versionText) versionText.textContent = `v${APP_VERSION}`;
+            if (buildChip) buildChip.textContent = `build: ${BUILD_STAMP}`;
+            if (footerVersion) footerVersion.textContent = `version ${APP_VERSION} · ${BUILD_STAMP}`;
+            document.title = `Modulo Calculator Pro · v${APP_VERSION}`;
         }
 
         function loadHistory() {
