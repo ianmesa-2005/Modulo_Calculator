@@ -347,6 +347,20 @@
             margin-top: 8px;
         }
 
+        .version-banner {
+            margin: 10px 10px 0;
+            border-radius: 12px;
+            padding: 10px 12px;
+            background: rgba(16, 185, 129, 0.18);
+            border: 1px solid rgba(16, 185, 129, 0.45);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .version-banner strong {
+            margin-right: 6px;
+        }
+
         .footer {
             text-align: center;
             padding: 12px 14px 18px;
@@ -396,6 +410,8 @@
                 🌙
             </button>
         </div>
+
+        <div class="version-banner" id="versionBanner"><strong>✨ Updated UI Loaded</strong>v2.2 with responsive layout, facts, and secret tools.</div>
 
         <div class="main-content">
             <div>
@@ -507,6 +523,7 @@
         document.body.className = currentTheme;
         updateHistory();
         setRandomFact();
+        showUpdateHintOnce();
 
         const refs = {
             form: document.getElementById('calculatorForm'),
@@ -814,6 +831,19 @@
             if (!Number.isFinite(num)) return '—';
             if (Number.isInteger(num)) return String(num);
             return String(Number(num.toFixed(8)));
+        }
+
+        function showUpdateHintOnce() {
+            const key = 'moduloProSeenV22';
+            if (!localStorage.getItem(key)) {
+                refs.error.textContent = 'New version loaded: try tapping the icon 5× for secret tools.';
+                setTimeout(() => {
+                    if (refs.error.textContent.includes('New version loaded')) {
+                        refs.error.textContent = '';
+                    }
+                }, 2500);
+                localStorage.setItem(key, '1');
+            }
         }
 
         function loadHistory() {
