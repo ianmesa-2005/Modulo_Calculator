@@ -4,9 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modulo Calculator Pro</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'">
     <style>
-        body {
+        :root {
+            --radius: 14px;
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --error: #dc2626;
+        }
+
+        * {
             box-sizing: border-box;
+        }
+
+        body {
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -15,93 +26,105 @@
             overflow-x: hidden;
         }
 
-        /* Light Theme */
         body.light {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #2d3748;
         }
 
-        /* Dark Theme */
         body.dark {
             background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
             color: #e2e8f0;
         }
 
         .app-container {
-            max-width: 400px;
+            width: min(100%, 920px);
             margin: 0 auto;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            padding: 0 10px;
         }
 
         .header {
-            padding: 20px 20px 0;
+            padding: 16px 10px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 12px;
         }
 
         .app-info {
             display: flex;
             align-items: center;
+            min-width: 0;
         }
 
         .app-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 12px;
+            margin-right: 10px;
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            flex-shrink: 0;
+        }
+
+        .app-title-wrap {
+            min-width: 0;
         }
 
         .app-title {
-            font-size: 20px;
+            font-size: clamp(18px, 3.2vw, 24px);
             font-weight: 700;
             margin: 0;
+        }
+
+        .app-subtitle {
+            font-size: 12px;
+            opacity: 0.85;
         }
 
         .theme-toggle {
             background: rgba(255, 255, 255, 0.2);
             border: none;
-            border-radius: 20px;
-            padding: 8px;
+            border-radius: 999px;
+            padding: 9px;
             cursor: pointer;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
-        }
-
-        .theme-toggle:hover {
-            background: rgba(255, 255, 255, 0.3);
+            color: inherit;
         }
 
         .main-content {
             flex: 1;
-            padding: 20px;
+            padding: 14px 10px 20px;
+            display: grid;
+            gap: 14px;
+            grid-template-columns: 1.3fr 1fr;
+            align-items: start;
         }
 
-        .calculator-card {
+        .calculator-card,
+        .panel {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 24px;
-            margin-bottom: 20px;
+            border-radius: 18px;
+            padding: 18px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
         }
 
-        .dark .calculator-card {
+        .dark .calculator-card,
+        .dark .panel {
             background: rgba(45, 55, 72, 0.95);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 14px;
         }
 
         .input-label {
@@ -109,105 +132,92 @@
             align-items: center;
             font-size: 14px;
             font-weight: 600;
-            margin-bottom: 8px;
-            color: inherit;
+            margin-bottom: 6px;
         }
 
-        .input-icon {
-            width: 18px;
-            height: 18px;
-            margin-right: 8px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .input-field {
+        .input-field,
+        .select-field {
             width: 100%;
-            padding: 16px;
+            padding: 13px;
             border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 18px;
+            border-radius: var(--radius);
+            font-size: 16px;
             font-weight: 500;
             background: #f7fafc;
-            transition: all 0.3s ease;
-            box-sizing: border-box;
         }
 
-        .dark .input-field {
+        .dark .input-field,
+        .dark .select-field {
             background: #2d3748;
             border-color: #4a5568;
             color: #e2e8f0;
         }
 
-        .input-field:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        .input-field:focus,
+        .select-field:focus,
+        button:focus-visible {
+            outline: 3px solid rgba(102, 126, 234, 0.3);
+            outline-offset: 1px;
         }
 
-        .button-row {
+        .advanced-grid,
+        .quick-stats {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 14px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .button-row,
+        .tool-row {
             display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .calculate-button,
+        .clear-button,
+        .tool-btn,
+        .fact-btn {
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s ease;
         }
 
         .calculate-button {
-            flex: 2;
-            padding: 16px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            flex: 1 1 180px;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .calculate-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
         }
 
         .clear-button {
-            flex: 1;
-            padding: 16px;
-            background: rgba(239, 68, 68, 0.1);
-            color: #dc2626;
+            flex: 0 1 70px;
+            padding: 14px;
+            color: var(--error);
+            background: rgba(239, 68, 68, 0.12);
             border: 2px solid #fecaca;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        .dark .clear-button {
-            background: rgba(239, 68, 68, 0.2);
-            border-color: #7f1d1d;
+        .tool-btn,
+        .fact-btn {
+            padding: 9px 10px;
+            background: rgba(102, 126, 234, 0.12);
+            color: inherit;
+            font-size: 13px;
         }
 
-        .clear-button:hover {
-            background: rgba(239, 68, 68, 0.2);
-            transform: translateY(-1px);
+        .result-section,
+        .panel-block {
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 12px;
         }
 
         .result-section {
             background: linear-gradient(135deg, #f0f9ff, #e0e7ff);
-            border-radius: 16px;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 20px;
             border: 2px solid #ddd6fe;
         }
 
@@ -217,152 +227,152 @@
         }
 
         .result-label {
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 13px;
+            font-weight: 700;
             color: #6366f1;
-            margin-bottom: 8px;
-        }
-
-        .dark .result-label {
-            color: #a5b4fc;
+            margin-bottom: 6px;
         }
 
         .result-value {
-            font-size: 36px;
+            font-size: clamp(28px, 8vw, 38px);
             font-weight: 800;
-            margin: 0;
-            min-height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            min-height: 42px;
+            word-break: break-word;
         }
 
-        .steps-section {
-            background: rgba(255, 255, 255, 0.7);
+        .error-message {
+            color: var(--error);
+            font-size: 13px;
+            margin-top: 6px;
+            min-height: 18px;
+        }
+
+        .stat-card {
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+            background: rgba(102, 126, 234, 0.08);
+            border: 1px solid rgba(102, 126, 234, 0.18);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .steps-section,
+        .history-section,
+        .facts-section,
+        .secret-section {
             border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        .dark .steps-section {
+        .dark .steps-section,
+        .dark .history-section,
+        .dark .facts-section,
+        .dark .secret-section {
             background: rgba(45, 55, 72, 0.7);
-            border-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.12);
         }
 
-        .steps-title {
-            font-size: 16px;
+        .section-title {
+            font-size: 15px;
             font-weight: 700;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
             display: flex;
+            justify-content: space-between;
             align-items: center;
+            gap: 8px;
         }
 
         .step {
             background: rgba(102, 126, 234, 0.1);
             border-radius: 8px;
-            padding: 12px;
+            padding: 10px;
             margin-bottom: 8px;
             font-family: 'Courier New', monospace;
-            font-size: 14px;
+            font-size: 13px;
             border-left: 4px solid #667eea;
         }
 
-        .dark .step {
-            background: rgba(102, 126, 234, 0.2);
-        }
-
-        .history-section {
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 16px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .dark .history-section {
-            background: rgba(45, 55, 72, 0.7);
-            border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .history-title {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
         .history-item {
-            background: rgba(102, 126, 234, 0.05);
+            background: rgba(102, 126, 234, 0.06);
             border-radius: 8px;
-            padding: 12px;
+            padding: 10px;
             margin-bottom: 8px;
-            font-size: 14px;
+            font-size: 13px;
+            border: 1px solid rgba(102, 126, 234, 0.15);
             cursor: pointer;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(102, 126, 234, 0.1);
         }
 
-        .dark .history-item {
-            background: rgba(102, 126, 234, 0.1);
-            border-color: rgba(102, 126, 234, 0.2);
-        }
-
-        .history-item:hover {
-            background: rgba(102, 126, 234, 0.1);
-            transform: translateX(4px);
-        }
-
-        .clear-history {
-            background: none;
-            border: none;
-            color: #dc2626;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .error-message {
-            color: #dc2626;
-            font-size: 14px;
-            margin-top: 8px;
-            font-weight: 500;
+        .history-item:hover,
+        .tool-btn:hover,
+        .fact-btn:hover {
+            transform: translateY(-1px);
         }
 
         .empty-state {
             text-align: center;
             color: #9ca3af;
             font-style: italic;
-            font-size: 14px;
+            font-size: 13px;
         }
 
-        .icon {
-            margin-right: 8px;
+        .fact-box {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.32);
+            border-radius: 12px;
+            padding: 10px;
+            font-size: 13px;
+            margin-bottom: 8px;
+            min-height: 44px;
+        }
+
+        .secret-section[hidden] {
+            display: none;
+        }
+
+        .secret-tip {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 8px;
         }
 
         .footer {
             text-align: center;
-            padding: 16px 20px 20px;
+            padding: 12px 14px 18px;
             font-size: 12px;
-            font-weight: 400;
-            opacity: 0.7;
-            color: rgba(255, 255, 255, 0.8);
+            opacity: 0.8;
+            color: rgba(255, 255, 255, 0.88);
         }
 
-        .dark .footer {
-            color: rgba(226, 232, 240, 0.6);
-        }
-
-        @media (max-width: 480px) {
+        @media (max-width: 900px) {
             .main-content {
-                padding: 16px;
+                grid-template-columns: 1fr;
             }
-            
-            .calculator-card {
-                padding: 20px;
+        }
+
+        @media (max-width: 520px) {
+            .advanced-grid,
+            .quick-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .app-title {
+                letter-spacing: -0.2px;
+            }
+
+            .clear-button {
+                flex: 1 1 auto;
             }
         }
     </style>
@@ -371,114 +381,179 @@
     <div class="app-container">
         <div class="header">
             <div class="app-info">
-                <div class="app-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M7 10L12 15L17 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <div class="app-icon" id="secretTrigger" title="Tip: tap me 5x for a surprise">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <circle cx="12" cy="12" r="10" stroke="white" stroke-width="2"/>
+                        <path d="M8 12h8M12 8v8" stroke="white" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </div>
-                <h1 class="app-title">Modulo Pro</h1>
+                <div class="app-title-wrap">
+                    <h1 class="app-title">Modulo Pro</h1>
+                    <div class="app-subtitle">Fast, safe, and mobile-friendly modulo helper</div>
+                </div>
             </div>
-            <button class="theme-toggle" onclick="toggleTheme()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2"/>
-                </svg>
+            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                🌙
             </button>
         </div>
 
         <div class="main-content">
-            <div class="calculator-card">
-                <form id="calculatorForm">
-                    <div class="input-group">
-                        <label class="input-label">
-                            <div class="input-icon">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" stroke="white" stroke-width="2"/>
-                                </svg>
+            <div>
+                <div class="calculator-card">
+                    <form id="calculatorForm" autocomplete="off">
+                        <div class="input-group">
+                            <label class="input-label" for="dividend">Dividend</label>
+                            <input type="number" step="any" inputmode="decimal" id="dividend" class="input-field" placeholder="Example: -37" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label class="input-label" for="divisor">Divisor</label>
+                            <input type="number" step="any" inputmode="decimal" id="divisor" class="input-field" placeholder="Example: 9" required>
+                        </div>
+
+                        <div class="advanced-grid">
+                            <div>
+                                <label class="input-label" for="modMode">Mode</label>
+                                <select id="modMode" class="select-field">
+                                    <option value="remainder">JavaScript remainder (%)</option>
+                                    <option value="euclidean">Euclidean modulo (always non-negative)</option>
+                                </select>
                             </div>
-                            Dividend
-                        </label>
-                        <input type="number" id="dividend" class="input-field" placeholder="Enter dividend..." required>
-                    </div>
-
-                    <div class="input-group">
-                        <label class="input-label">
-                            <div class="input-icon">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="12" cy="12" r="10" stroke="white" stroke-width="2"/>
-                                    <path d="M8 12h8" stroke="white" stroke-width="2"/>
-                                </svg>
+                            <div>
+                                <label class="input-label">Quick Tricks</label>
+                                <div class="tool-row">
+                                    <button type="button" class="tool-btn" id="swapBtn">Swap</button>
+                                    <button type="button" class="tool-btn" id="randomBtn">Random</button>
+                                    <button type="button" class="tool-btn" id="copyBtn">Copy</button>
+                                </div>
                             </div>
-                            Divisor
-                        </label>
-                        <input type="number" id="divisor" class="input-field" placeholder="Enter divisor..." required>
+                        </div>
+
+                        <div class="button-row">
+                            <button type="submit" class="calculate-button">Calculate</button>
+                            <button type="button" class="clear-button" id="clearBtn">Clear</button>
+                        </div>
+                    </form>
+
+                    <div class="quick-stats" id="quickStats">
+                        <div class="stat-card"><div class="stat-label">Quotient</div><div class="stat-value" id="quotientValue">—</div></div>
+                        <div class="stat-card"><div class="stat-label">GCD</div><div class="stat-value" id="gcdValue">—</div></div>
+                        <div class="stat-card"><div class="stat-label">Congruence</div><div class="stat-value" id="congruenceValue">—</div></div>
+                        <div class="stat-card"><div class="stat-label">Parity</div><div class="stat-value" id="parityValue">—</div></div>
                     </div>
 
-                    <div class="button-row">
-                        <button type="submit" class="calculate-button">
-                            <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="currentColor" stroke-width="2"/>
-                            </svg>
-                            Calculate
-                        </button>
-                        <button type="button" class="clear-button" onclick="clearInputs()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" stroke="currentColor" stroke-width="2"/>
-                            </svg>
-                        </button>
+                    <div class="result-section">
+                        <div class="result-label">Result</div>
+                        <div class="result-value" id="result" aria-live="polite">—</div>
+                        <div class="error-message" id="error" role="alert"></div>
                     </div>
-                </form>
+                </div>
 
-                <div class="result-section">
-                    <div class="result-label">Remainder</div>
-                    <div class="result-value" id="result">—</div>
-                    <div class="error-message" id="error"></div>
+                <div class="steps-section" id="stepsSection" style="display:none; margin-top: 14px;">
+                    <div class="section-title">Step-by-Step</div>
+                    <div id="steps"></div>
                 </div>
             </div>
 
-            <div class="steps-section" id="stepsSection" style="display: none;">
-                <div class="steps-title">
-                    <span>
-                        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z" stroke="currentColor" stroke-width="2"/>
-                            <path d="M21 11h-4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z" stroke="currentColor" stroke-width="2"/>
-                            <path d="M7 21V9a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        Step-by-Step Solution
-                    </span>
+            <div class="panel">
+                <div class="facts-section panel-block">
+                    <div class="section-title">
+                        <span>Modulo Facts</span>
+                        <button type="button" class="fact-btn" id="nextFactBtn">New Fact</button>
+                    </div>
+                    <div class="fact-box" id="factBox">Modulo turns large numbers into cycles and patterns.</div>
                 </div>
-                <div id="steps"></div>
-            </div>
 
-            <div class="history-section">
-                <div class="history-title">
-                    <span>
-                        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                            <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        Calculation History
-                    </span>
-                    <button class="clear-history" onclick="clearHistory()">Clear All</button>
+                <div class="history-section panel-block">
+                    <div class="section-title">
+                        <span>Calculation History</span>
+                        <button type="button" class="fact-btn" id="clearHistoryBtn">Clear</button>
+                    </div>
+                    <div id="history">
+                        <div class="empty-state">No calculations yet</div>
+                    </div>
                 </div>
-                <div id="history">
-                    <div class="empty-state">No calculations yet</div>
+
+                <div class="secret-section panel-block" id="secretSection" hidden>
+                    <div class="section-title">🔐 Secret Playground</div>
+                    <div class="tool-row" style="margin-bottom: 8px;">
+                        <button type="button" class="tool-btn" id="primePulseBtn">Prime Pulse</button>
+                        <button type="button" class="tool-btn" id="luckyBtn">Lucky 7</button>
+                    </div>
+                    <div class="fact-box" id="secretMessage">Secret unlocked. Try the hidden buttons!</div>
+                    <div class="secret-tip">Security tip: stored data is validated, rendered safely, and old unsafe entries are ignored.</div>
                 </div>
             </div>
         </div>
-        
-        <div class="footer">
-            Created by Ian Mesa
-        </div>
+
+        <div class="footer">Created by Ian Mesa · Enhanced for better UX, responsiveness, and safer rendering</div>
     </div>
 
     <script>
-        let history = JSON.parse(localStorage.getItem('moduloHistory') || '[]');
-        let currentTheme = localStorage.getItem('theme') || 'light';
+        const MAX_HISTORY = 20;
+        const moduloFacts = [
+            'In cryptography, modular arithmetic protects data in RSA and ECC.',
+            'Digital clocks are modulo 12 or modulo 24 systems.',
+            'Hash tables often use modulo to map values into fixed buckets.',
+            'If a ≡ b (mod n), then they leave the same remainder when divided by n.',
+            'Euclidean modulo keeps results non-negative, useful for array wrapping.',
+            'Checksums and cyclic redundancy checks rely on modular behavior.'
+        ];
 
-        // Initialize theme
+        let history = sanitizeHistory(loadHistory());
+        let currentTheme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
+        let iconTapCount = 0;
+
         document.body.className = currentTheme;
         updateHistory();
+        setRandomFact();
+
+        const refs = {
+            form: document.getElementById('calculatorForm'),
+            dividend: document.getElementById('dividend'),
+            divisor: document.getElementById('divisor'),
+            mode: document.getElementById('modMode'),
+            result: document.getElementById('result'),
+            error: document.getElementById('error'),
+            stepsSection: document.getElementById('stepsSection'),
+            steps: document.getElementById('steps'),
+            quotientValue: document.getElementById('quotientValue'),
+            gcdValue: document.getElementById('gcdValue'),
+            congruenceValue: document.getElementById('congruenceValue'),
+            parityValue: document.getElementById('parityValue'),
+            history: document.getElementById('history'),
+            factBox: document.getElementById('factBox'),
+            secretSection: document.getElementById('secretSection'),
+            secretMessage: document.getElementById('secretMessage')
+        };
+
+        document.getElementById('swapBtn').addEventListener('click', swapInputs);
+        document.getElementById('randomBtn').addEventListener('click', randomizeInputs);
+        document.getElementById('copyBtn').addEventListener('click', copyResult);
+        document.getElementById('clearBtn').addEventListener('click', clearInputs);
+        document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
+        document.getElementById('nextFactBtn').addEventListener('click', setRandomFact);
+        document.getElementById('secretTrigger').addEventListener('click', handleSecretTrigger);
+        document.getElementById('primePulseBtn').addEventListener('click', primePulse);
+        document.getElementById('luckyBtn').addEventListener('click', luckyMode);
+
+        refs.form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            calculate(true);
+        });
+
+        refs.dividend.addEventListener('input', autoCalculate);
+        refs.divisor.addEventListener('input', autoCalculate);
+        refs.mode.addEventListener('change', autoCalculate);
+
+        document.addEventListener('keydown', (event) => {
+            if (event.altKey && event.key.toLowerCase() === 'r') {
+                randomizeInputs();
+            }
+            if (event.altKey && event.key.toLowerCase() === 's') {
+                swapInputs();
+            }
+        });
 
         function toggleTheme() {
             currentTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -486,117 +561,303 @@
             localStorage.setItem('theme', currentTheme);
         }
 
-        document.getElementById('calculatorForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            calculate();
-        });
+        function calculate(saveToHistory = false) {
+            const dividend = toFiniteNumber(refs.dividend.value);
+            const divisor = toFiniteNumber(refs.divisor.value);
+            const mode = refs.mode.value === 'euclidean' ? 'euclidean' : 'remainder';
 
-        function calculate() {
-            const dividend = parseFloat(document.getElementById('dividend').value);
-            const divisor = parseFloat(document.getElementById('divisor').value);
-            const resultElement = document.getElementById('result');
-            const errorElement = document.getElementById('error');
-            const stepsSection = document.getElementById('stepsSection');
-            const stepsElement = document.getElementById('steps');
-            
-            // Clear previous error
-            errorElement.textContent = '';
-            
-            // Validate inputs
-            if (isNaN(dividend) || isNaN(divisor)) {
-                errorElement.textContent = 'Please enter valid numbers';
-                resultElement.textContent = '—';
-                stepsSection.style.display = 'none';
-                return;
+            refs.error.textContent = '';
+
+            if (!Number.isFinite(dividend) || !Number.isFinite(divisor)) {
+                refs.error.textContent = 'Enter valid numbers first.';
+                resetResultPanels();
+                refs.stepsSection.style.display = 'none';
+                return null;
             }
-            
+
             if (divisor === 0) {
-                errorElement.textContent = 'Cannot divide by zero';
-                resultElement.textContent = '—';
-                stepsSection.style.display = 'none';
-                return;
+                refs.error.textContent = 'Divisor cannot be zero.';
+                resetResultPanels();
+                refs.stepsSection.style.display = 'none';
+                return null;
             }
-            
-            // Calculate modulo
-            const result = dividend % divisor;
-            const quotient = Math.floor(dividend / divisor);
-            
-            resultElement.textContent = result;
-            
-            // Show steps
-            stepsSection.style.display = 'block';
-            stepsElement.innerHTML = `
-                <div class="step">Step 1: Divide ${dividend} by ${divisor}</div>
-                <div class="step">Step 2: ${dividend} ÷ ${divisor} = ${quotient} remainder ${result}</div>
-                <div class="step">Step 3: ${dividend} = ${divisor} × ${quotient} + ${result}</div>
-                <div class="step">Result: ${dividend} mod ${divisor} = ${result}</div>
-            `;
-            
-            // Add to history
-            const calculation = {
-                dividend: dividend,
-                divisor: divisor,
-                result: result,
-                timestamp: new Date().toLocaleString()
-            };
-            
-            history.unshift(calculation);
-            if (history.length > 10) history.pop(); // Keep only last 10
-            
-            localStorage.setItem('moduloHistory', JSON.stringify(history));
-            updateHistory();
+
+            const quotient = Math.trunc(dividend / divisor);
+            const rawRemainder = dividend % divisor;
+            const euclideanRemainder = ((rawRemainder + Math.abs(divisor)) % Math.abs(divisor));
+            const result = mode === 'euclidean' ? euclideanRemainder : rawRemainder;
+            const gcdValue = gcd(Math.trunc(dividend), Math.trunc(divisor));
+            const congruenceText = `${formatNumber(dividend)} ≡ ${formatNumber(result)} (mod ${formatNumber(Math.abs(divisor))})`;
+            const parity = Number.isInteger(result) ? (Math.abs(result) % 2 === 0 ? 'Even' : 'Odd') : 'Decimal';
+
+            refs.result.textContent = formatNumber(result);
+            refs.quotientValue.textContent = formatNumber(quotient);
+            refs.gcdValue.textContent = formatNumber(gcdValue);
+            refs.congruenceValue.textContent = 'Valid';
+            refs.parityValue.textContent = parity;
+
+            refs.stepsSection.style.display = 'block';
+            renderSteps([
+                `Mode: ${mode === 'euclidean' ? 'Euclidean modulo' : 'JavaScript remainder'}`,
+                `Step 1: ${formatNumber(dividend)} ÷ ${formatNumber(divisor)} = ${formatNumber(quotient)}`,
+                `Step 2: Raw remainder = ${formatNumber(rawRemainder)}`,
+                `Step 3: Euclidean adjustment = ${formatNumber(euclideanRemainder)}`,
+                `Step 4: Congruence: ${congruenceText}`,
+                `Result: ${formatNumber(dividend)} mod ${formatNumber(divisor)} = ${formatNumber(result)}`
+            ]);
+
+            if (saveToHistory) {
+                const calc = {
+                    dividend,
+                    divisor,
+                    mode,
+                    result,
+                    quotient,
+                    gcd: gcdValue,
+                    timestamp: new Date().toLocaleString()
+                };
+
+                history.unshift(calc);
+                history = sanitizeHistory(history).slice(0, MAX_HISTORY);
+                saveHistory(history);
+                updateHistory();
+            }
+
+            return result;
+        }
+
+        function renderSteps(stepLines) {
+            refs.steps.innerHTML = '';
+            for (const line of stepLines) {
+                const div = document.createElement('div');
+                div.className = 'step';
+                div.textContent = line;
+                refs.steps.appendChild(div);
+            }
         }
 
         function updateHistory() {
-            const historyElement = document.getElementById('history');
-            
+            refs.history.innerHTML = '';
+
             if (history.length === 0) {
-                historyElement.innerHTML = '<div class="empty-state">No calculations yet</div>';
+                const empty = document.createElement('div');
+                empty.className = 'empty-state';
+                empty.textContent = 'No calculations yet';
+                refs.history.appendChild(empty);
                 return;
             }
-            
-            historyElement.innerHTML = history.map(calc => `
-                <div class="history-item" onclick="loadCalculation(${calc.dividend}, ${calc.divisor})">
-                    <strong>${calc.dividend} mod ${calc.divisor} = ${calc.result}</strong>
-                    <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">${calc.timestamp}</div>
-                </div>
-            `).join('');
+
+            history.forEach((calc) => {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'history-item';
+                item.addEventListener('click', () => loadCalculation(calc));
+
+                const title = document.createElement('div');
+                title.style.fontWeight = '700';
+                title.textContent = `${formatNumber(calc.dividend)} mod ${formatNumber(calc.divisor)} = ${formatNumber(calc.result)}`;
+
+                const meta = document.createElement('div');
+                meta.style.fontSize = '12px';
+                meta.style.opacity = '0.75';
+                meta.style.marginTop = '4px';
+                meta.textContent = `mode: ${calc.mode} · q=${formatNumber(calc.quotient)} · gcd=${formatNumber(calc.gcd)}`;
+
+                const stamp = document.createElement('div');
+                stamp.style.fontSize = '12px';
+                stamp.style.opacity = '0.75';
+                stamp.style.marginTop = '2px';
+                stamp.textContent = calc.timestamp;
+
+                item.appendChild(title);
+                item.appendChild(meta);
+                item.appendChild(stamp);
+                refs.history.appendChild(item);
+            });
         }
 
-        function loadCalculation(dividend, divisor) {
-            document.getElementById('dividend').value = dividend;
-            document.getElementById('divisor').value = divisor;
-            calculate();
+        function loadCalculation(calc) {
+            refs.dividend.value = formatNumber(calc.dividend);
+            refs.divisor.value = formatNumber(calc.divisor);
+            refs.mode.value = calc.mode;
+            calculate(false);
         }
 
         function clearInputs() {
-            document.getElementById('dividend').value = '';
-            document.getElementById('divisor').value = '';
-            document.getElementById('result').textContent = '—';
-            document.getElementById('error').textContent = '';
-            document.getElementById('stepsSection').style.display = 'none';
+            refs.dividend.value = '';
+            refs.divisor.value = '';
+            refs.error.textContent = '';
+            refs.stepsSection.style.display = 'none';
+            resetResultPanels();
+        }
+
+        function resetResultPanels() {
+            refs.result.textContent = '—';
+            refs.quotientValue.textContent = '—';
+            refs.gcdValue.textContent = '—';
+            refs.congruenceValue.textContent = '—';
+            refs.parityValue.textContent = '—';
         }
 
         function clearHistory() {
             history = [];
-            localStorage.removeItem('moduloHistory');
+            saveHistory(history);
             updateHistory();
         }
 
-        // Auto-calculate on input change
-        document.getElementById('dividend').addEventListener('input', autoCalculate);
-        document.getElementById('divisor').addEventListener('input', autoCalculate);
+        function swapInputs() {
+            const temp = refs.dividend.value;
+            refs.dividend.value = refs.divisor.value;
+            refs.divisor.value = temp;
+            autoCalculate();
+        }
 
-        function autoCalculate() {
-            const dividend = parseFloat(document.getElementById('dividend').value);
-            const divisor = parseFloat(document.getElementById('divisor').value);
-            
-            if (!isNaN(dividend) && !isNaN(divisor) && divisor !== 0) {
-                const result = dividend % divisor;
-                document.getElementById('result').textContent = result;
-                document.getElementById('error').textContent = '';
+        function randomizeInputs() {
+            const dividend = Math.floor(Math.random() * 600) - 300;
+            let divisor = 0;
+            while (divisor === 0) {
+                divisor = Math.floor(Math.random() * 80) - 40;
+            }
+            refs.dividend.value = String(dividend);
+            refs.divisor.value = String(divisor);
+            calculate(true);
+        }
+
+        async function copyResult() {
+            const resultText = refs.result.textContent;
+            if (!resultText || resultText === '—') {
+                refs.error.textContent = 'No result available to copy.';
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(resultText);
+                refs.error.textContent = 'Copied!';
+                setTimeout(() => {
+                    if (refs.error.textContent === 'Copied!') {
+                        refs.error.textContent = '';
+                    }
+                }, 900);
+            } catch {
+                refs.error.textContent = 'Clipboard is unavailable in this browser.';
             }
         }
+
+        function autoCalculate() {
+            const dividend = toFiniteNumber(refs.dividend.value);
+            const divisor = toFiniteNumber(refs.divisor.value);
+            if (Number.isFinite(dividend) && Number.isFinite(divisor) && divisor !== 0) {
+                calculate(false);
+            }
+        }
+
+        function setRandomFact() {
+            const index = Math.floor(Math.random() * moduloFacts.length);
+            refs.factBox.textContent = moduloFacts[index];
+        }
+
+        function handleSecretTrigger() {
+            iconTapCount += 1;
+            if (iconTapCount >= 5) {
+                refs.secretSection.hidden = false;
+                refs.secretMessage.textContent = 'Secret unlocked! Try Prime Pulse or Lucky 7.';
+                iconTapCount = 0;
+            }
+        }
+
+        function primePulse() {
+            const divisor = Math.abs(Math.trunc(toFiniteNumber(refs.divisor.value) || 0));
+            if (divisor < 2) {
+                refs.secretMessage.textContent = 'Enter a divisor >= 2 to test for primality.';
+                return;
+            }
+            refs.secretMessage.textContent = isPrime(divisor)
+                ? `${divisor} is prime. Nice pick for modular patterns.`
+                : `${divisor} is composite. Try a prime like 7, 11, or 13.`;
+        }
+
+        function luckyMode() {
+            refs.dividend.value = '777';
+            refs.divisor.value = '7';
+            refs.mode.value = 'euclidean';
+            calculate(true);
+            refs.secretMessage.textContent = 'Lucky 7 loaded: 777 mod 7 = 0';
+        }
+
+        function isPrime(n) {
+            if (n < 2) return false;
+            if (n === 2) return true;
+            if (n % 2 === 0) return false;
+            for (let i = 3; i * i <= n; i += 2) {
+                if (n % i === 0) return false;
+            }
+            return true;
+        }
+
+        function gcd(a, b) {
+            let x = Math.abs(a);
+            let y = Math.abs(b);
+            while (y !== 0) {
+                const temp = y;
+                y = x % y;
+                x = temp;
+            }
+            return x;
+        }
+
+        function toFiniteNumber(value) {
+            const num = Number(value);
+            return Number.isFinite(num) ? num : NaN;
+        }
+
+        function formatNumber(num) {
+            if (!Number.isFinite(num)) return '—';
+            if (Number.isInteger(num)) return String(num);
+            return String(Number(num.toFixed(8)));
+        }
+
+        function loadHistory() {
+            try {
+                const raw = localStorage.getItem('moduloHistory');
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+
+        function saveHistory(items) {
+            localStorage.setItem('moduloHistory', JSON.stringify(items));
+        }
+
+        function sanitizeHistory(items) {
+            const safe = [];
+            for (const item of items) {
+                const dividend = toFiniteNumber(item?.dividend);
+                const divisor = toFiniteNumber(item?.divisor);
+                const result = toFiniteNumber(item?.result);
+                const quotient = toFiniteNumber(item?.quotient);
+                const gcdValue = toFiniteNumber(item?.gcd);
+                const mode = item?.mode === 'euclidean' ? 'euclidean' : 'remainder';
+                const timestamp = typeof item?.timestamp === 'string' ? item.timestamp.slice(0, 80) : new Date().toLocaleString();
+
+                if (!Number.isFinite(dividend) || !Number.isFinite(divisor) || divisor === 0 || !Number.isFinite(result)) {
+                    continue;
+                }
+
+                safe.push({
+                    dividend,
+                    divisor,
+                    result,
+                    quotient: Number.isFinite(quotient) ? quotient : Math.trunc(dividend / divisor),
+                    gcd: Number.isFinite(gcdValue) ? gcdValue : gcd(Math.trunc(dividend), Math.trunc(divisor)),
+                    mode,
+                    timestamp
+                });
+            }
+            return safe;
+        }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9849b5c3a020fecd',t:'MTc1ODc5NDc5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
