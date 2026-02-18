@@ -154,6 +154,55 @@
             margin-bottom: 20px;
         }
 
+        .advanced-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .select-field {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            background: #f7fafc;
+        }
+
+        .dark .select-field {
+            background: #2d3748;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+            background: rgba(102, 126, 234, 0.08);
+            border: 1px solid rgba(102, 126, 234, 0.18);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
         .calculate-button {
             flex: 2;
             padding: 16px;
@@ -343,6 +392,21 @@
             margin-right: 8px;
         }
 
+        .tool-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tool-btn {
+            border: none;
+            background: rgba(102, 126, 234, 0.1);
+            color: inherit;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
         .footer {
             text-align: center;
             padding: 16px 20px 20px;
@@ -414,6 +478,24 @@
                         <input type="number" id="divisor" class="input-field" placeholder="Enter divisor..." required>
                     </div>
 
+                    <div class="advanced-grid">
+                        <div>
+                            <label class="input-label">Mode</label>
+                            <select id="modMode" class="select-field">
+                                <option value="remainder">JavaScript remainder (%)</option>
+                                <option value="euclidean">Euclidean modulo (always positive)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="input-label">Quick Actions</label>
+                            <div class="tool-row">
+                                <button type="button" class="tool-btn" onclick="swapInputs()">Swap</button>
+                                <button type="button" class="tool-btn" onclick="randomizeInputs()">Random</button>
+                                <button type="button" class="tool-btn" onclick="copyResult()">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="button-row">
                         <button type="submit" class="calculate-button">
                             <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -428,6 +510,12 @@
                         </button>
                     </div>
                 </form>
+
+                <div class="quick-stats" id="quickStats">
+                    <div class="stat-card"><div class="stat-label">Quotient</div><div class="stat-value" id="quotientValue">—</div></div>
+                    <div class="stat-card"><div class="stat-label">GCD</div><div class="stat-value" id="gcdValue">—</div></div>
+                    <div class="stat-card"><div class="stat-label">Congruence</div><div class="stat-value" id="congruenceValue">—</div></div>
+                </div>
 
                 <div class="result-section">
                     <div class="result-label">Remainder</div>
@@ -476,7 +564,6 @@
         let history = JSON.parse(localStorage.getItem('moduloHistory') || '[]');
         let currentTheme = localStorage.getItem('theme') || 'light';
 
-        // Initialize theme
         document.body.className = currentTheme;
         updateHistory();
 
@@ -488,84 +575,128 @@
 
         document.getElementById('calculatorForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            calculate();
+            calculate(true);
         });
 
-        function calculate() {
+        document.getElementById('modMode').addEventListener('change', function() {
+            autoCalculate();
+        });
+
+        function calculate(saveToHistory = false) {
             const dividend = parseFloat(document.getElementById('dividend').value);
             const divisor = parseFloat(document.getElementById('divisor').value);
+            const mode = document.getElementById('modMode').value;
             const resultElement = document.getElementById('result');
             const errorElement = document.getElementById('error');
             const stepsSection = document.getElementById('stepsSection');
             const stepsElement = document.getElementById('steps');
-            
-            // Clear previous error
+
             errorElement.textContent = '';
-            
-            // Validate inputs
+
             if (isNaN(dividend) || isNaN(divisor)) {
                 errorElement.textContent = 'Please enter valid numbers';
-                resultElement.textContent = '—';
+                resetResultPanels();
                 stepsSection.style.display = 'none';
-                return;
+                return null;
             }
-            
+
             if (divisor === 0) {
                 errorElement.textContent = 'Cannot divide by zero';
-                resultElement.textContent = '—';
+                resetResultPanels();
                 stepsSection.style.display = 'none';
-                return;
+                return null;
             }
-            
-            // Calculate modulo
-            const result = dividend % divisor;
+
             const quotient = Math.floor(dividend / divisor);
-            
-            resultElement.textContent = result;
-            
-            // Show steps
+            const rawRemainder = dividend % divisor;
+            const euclideanRemainder = ((dividend % divisor) + Math.abs(divisor)) % Math.abs(divisor);
+            const result = mode === 'euclidean' ? euclideanRemainder : rawRemainder;
+            const gcdValue = gcd(Math.trunc(dividend), Math.trunc(divisor));
+            const normalizedDivisor = Math.abs(divisor);
+            const congruence = normalizedDivisor === 0 ? '—' : `${dividend} ≡ ${result} (mod ${normalizedDivisor})`;
+
+            resultElement.textContent = formatNumber(result);
+            document.getElementById('quotientValue').textContent = formatNumber(quotient);
+            document.getElementById('gcdValue').textContent = formatNumber(gcdValue);
+            document.getElementById('congruenceValue').textContent = normalizedDivisor === 0 ? '—' : 'True';
+
             stepsSection.style.display = 'block';
             stepsElement.innerHTML = `
-                <div class="step">Step 1: Divide ${dividend} by ${divisor}</div>
-                <div class="step">Step 2: ${dividend} ÷ ${divisor} = ${quotient} remainder ${result}</div>
-                <div class="step">Step 3: ${dividend} = ${divisor} × ${quotient} + ${result}</div>
-                <div class="step">Result: ${dividend} mod ${divisor} = ${result}</div>
+                <div class="step">Mode: ${mode === 'euclidean' ? 'Euclidean modulo' : 'JavaScript remainder'}</div>
+                <div class="step">Step 1: ${dividend} ÷ ${divisor} = ${formatNumber(quotient)}</div>
+                <div class="step">Step 2: Raw remainder = ${dividend} % ${divisor} = ${formatNumber(rawRemainder)}</div>
+                <div class="step">Step 3: Euclidean form = ((a % b) + |b|) % |b| = ${formatNumber(euclideanRemainder)}</div>
+                <div class="step">Step 4: ${congruence}</div>
+                <div class="step">Result: ${dividend} mod ${divisor} = ${formatNumber(result)}</div>
             `;
-            
-            // Add to history
-            const calculation = {
-                dividend: dividend,
-                divisor: divisor,
-                result: result,
-                timestamp: new Date().toLocaleString()
-            };
-            
-            history.unshift(calculation);
-            if (history.length > 10) history.pop(); // Keep only last 10
-            
-            localStorage.setItem('moduloHistory', JSON.stringify(history));
-            updateHistory();
+
+            if (saveToHistory) {
+                const calculation = {
+                    dividend,
+                    divisor,
+                    mode,
+                    result,
+                    quotient,
+                    gcd: gcdValue,
+                    timestamp: new Date().toLocaleString()
+                };
+
+                history.unshift(calculation);
+                if (history.length > 15) history.pop();
+                localStorage.setItem('moduloHistory', JSON.stringify(history));
+                updateHistory();
+            }
+
+            return result;
+        }
+
+        function resetResultPanels() {
+            document.getElementById('result').textContent = '—';
+            document.getElementById('quotientValue').textContent = '—';
+            document.getElementById('gcdValue').textContent = '—';
+            document.getElementById('congruenceValue').textContent = '—';
+        }
+
+        function gcd(a, b) {
+            let x = Math.abs(a);
+            let y = Math.abs(b);
+
+            while (y !== 0) {
+                const t = y;
+                y = x % y;
+                x = t;
+            }
+
+            return x;
+        }
+
+        function formatNumber(num) {
+            if (!Number.isFinite(num)) return '—';
+            if (Number.isInteger(num)) return String(num);
+            return Number(num.toFixed(6)).toString();
         }
 
         function updateHistory() {
             const historyElement = document.getElementById('history');
-            
+
             if (history.length === 0) {
                 historyElement.innerHTML = '<div class="empty-state">No calculations yet</div>';
                 return;
             }
-            
+
             historyElement.innerHTML = history.map(calc => `
-                <div class="history-item" onclick="loadCalculation(${calc.dividend}, ${calc.divisor})">
-                    <strong>${calc.dividend} mod ${calc.divisor} = ${calc.result}</strong>
-                    <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">${calc.timestamp}</div>
+                <div class="history-item" onclick="loadCalculation(${calc.dividend}, ${calc.divisor}, '${calc.mode || 'remainder'}')">
+                    <strong>${calc.dividend} mod ${calc.divisor} = ${formatNumber(calc.result)}</strong>
+                    <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">mode: ${calc.mode || 'remainder'} · q=${formatNumber(calc.quotient ?? Math.floor(calc.dividend / calc.divisor))} · gcd=${formatNumber(calc.gcd ?? gcd(Math.trunc(calc.dividend), Math.trunc(calc.divisor)))}</div>
+                    <div style="font-size: 12px; color: #9ca3af; margin-top: 2px;">${calc.timestamp}</div>
                 </div>
             `).join('');
         }
 
-        function loadCalculation(dividend, divisor) {
+        function loadCalculation(dividend, divisor, mode = 'remainder') {
             document.getElementById('dividend').value = dividend;
             document.getElementById('divisor').value = divisor;
+            document.getElementById('modMode').value = mode;
             calculate();
         }
 
@@ -575,6 +706,7 @@
             document.getElementById('result').textContent = '—';
             document.getElementById('error').textContent = '';
             document.getElementById('stepsSection').style.display = 'none';
+            resetResultPanels();
         }
 
         function clearHistory() {
@@ -583,18 +715,54 @@
             updateHistory();
         }
 
-        // Auto-calculate on input change
+        function swapInputs() {
+            const dividendEl = document.getElementById('dividend');
+            const divisorEl = document.getElementById('divisor');
+            const temp = dividendEl.value;
+            dividendEl.value = divisorEl.value;
+            divisorEl.value = temp;
+            autoCalculate();
+        }
+
+        function randomizeInputs() {
+            const dividend = Math.floor(Math.random() * 500) - 250;
+            let divisor = 0;
+            while (divisor === 0) divisor = Math.floor(Math.random() * 49) - 24;
+
+            document.getElementById('dividend').value = dividend;
+            document.getElementById('divisor').value = divisor;
+            calculate(true);
+        }
+
+        async function copyResult() {
+            const resultText = document.getElementById('result').textContent;
+            if (!resultText || resultText === '—') {
+                document.getElementById('error').textContent = 'No result to copy yet';
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(resultText);
+                document.getElementById('error').textContent = 'Result copied to clipboard';
+                setTimeout(() => {
+                    if (document.getElementById('error').textContent === 'Result copied to clipboard') {
+                        document.getElementById('error').textContent = '';
+                    }
+                }, 1500);
+            } catch (err) {
+                document.getElementById('error').textContent = 'Clipboard is not available in this browser';
+            }
+        }
+
         document.getElementById('dividend').addEventListener('input', autoCalculate);
         document.getElementById('divisor').addEventListener('input', autoCalculate);
 
         function autoCalculate() {
             const dividend = parseFloat(document.getElementById('dividend').value);
             const divisor = parseFloat(document.getElementById('divisor').value);
-            
+
             if (!isNaN(dividend) && !isNaN(divisor) && divisor !== 0) {
-                const result = dividend % divisor;
-                document.getElementById('result').textContent = result;
-                document.getElementById('error').textContent = '';
+                calculate();
             }
         }
     </script>
